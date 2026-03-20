@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Analyst Revision Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+:root {
+  --bg: #0a0e14;
+  --bg-card: #111820;
+  --bg-hover: #171f2a;
+  --border: #1e2a3a;
+  --border-active: #2d4a6f;
+  --text: #c5cdd8;
+  --text-dim: #5a6a7e;
+  --text-bright: #e8edf3;
+  --accent: #3b82f6;
+  --accent-dim: #1e3a5f;
+  --red: #ef4444;
+  --red-dim: #3b1111;
+  --green: #22c55e;
+  --green-dim: #0a3320;
+  --amber: #f59e0b;
+  --amber-dim: #3b2a06;
+  --mandarin-tag: #8b5cf6;
+  --mandarin-dim: #1e1338;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ---- HEADER ---- */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 4px 10px;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+.header-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.header-right {
+  display: flex; align-items: center; gap: 20px;
+  font-size: 12px; color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); display: inline-block;
+  margin-right: 6px; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ---- PIPELINE NAV ---- */
+.pipeline-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.pipe-step {
+  flex: 1;
+  padding: 14px 20px;
+  text-align: center;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: all 0.2s;
+  position: relative;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.pipe-step:last-child { border-right: none; }
+.pipe-step:hover { background: var(--bg-hover); color: var(--text); }
+.pipe-step.active {
+  background: var(--bg);
+  color: var(--accent);
+}
+.pipe-step.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.pipe-step.completed { color: var(--green); }
+.pipe-step .step-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  display: block;
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+}
+.pipe-arrow {
+  position: absolute;
+  right: -6px; top: 50%; transform: translateY(-50%);
+  color: var(--text-dim); font-size: 10px; z-index: 1;
+}
+
+/* ---- MAIN ---- */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: calc(100vh - 110px);
+}
+.panel {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.panel:last-child { border-right: none; }
+.panel-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-label .tag {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+}
+.tag-en { background: var(--accent-dim); color: var(--accent); }
+.tag-zh { background: var(--mandarin-dim); color: var(--mandarin-tag); }
+.tag-output { background: var(--amber-dim); color: var(--amber); }
+.tag-red { background: var(--red-dim); color: var(--red); }
+
+/* ---- SOURCE BLOCKS ---- */
+.source-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.source-block .source-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+.zh-text {
+  font-family: 'Noto Sans SC', sans-serif;
+  color: var(--text-bright);
+  font-size: 14px;
+  line-height: 1.9;
+}
+.en-text { color: var(--text); }
+
+/* ---- EXTRACTION TABLE ---- */
+.extract-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.extract-table th {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.extract-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.extract-table tr:hover { background: var(--bg-hover); }
+
+.val-up { color: var(--red); font-weight: 600; }
+.val-down { color: var(--green); font-weight: 600; }
+.val-neutral { color: var(--amber); }
+.val-assumption { color: var(--accent); font-style: italic; }
+
+/* ---- DIVERGENCE ---- */
+.divergence-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.divergence-card h3 {
+  font-size: 14px;
+  color: var(--text-bright);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.divergence-metric {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.metric-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  text-align: center;
+}
+.metric-box .label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.metric-box .value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ---- OUTPUT REPORT ---- */
+.report {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.report-field {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.report-field:last-child { border-bottom: none; }
+.report-field .rkey {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.report-field .rval { color: var(--text-bright); }
+
+/* ---- TIMELINE ---- */
+.timeline {
+  position: relative;
+  padding-left: 24px;
+  margin: 16px 0;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.tl-item {
+  position: relative;
+  padding: 10px 0 10px 20px;
+  font-size: 13px;
+}
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -21px; top: 16px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg);
+}
+.tl-item.event-source::before { border-color: var(--mandarin-tag); background: var(--mandarin-dim); }
+.tl-item.event-call::before { border-color: var(--accent); background: var(--accent-dim); }
+.tl-item.event-alert::before { border-color: var(--red); background: var(--red-dim); }
+.tl-item.event-revision::before { border-color: var(--amber); background: var(--amber-dim); }
+.tl-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.tl-desc { color: var(--text); margin-top: 2px; }
+.tl-desc strong { color: var(--text-bright); }
+
+/* ---- CAUSAL CHAIN ---- */
+.causal-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.chain-node {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 14px;
+  color: var(--text-bright);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chain-node.breaking { border-color: var(--red); color: var(--red); }
+.chain-arrow { color: var(--text-dim); font-size: 14px; }
+
+/* ---- FULL WIDTH ---- */
+.main.full-width { grid-template-columns: 1fr; }
+
+/* ---- HIDDEN ---- */
+.hidden { display: none; }
+
+/* ---- FOOTER ---- */
+.credits {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">PARE</div>
+    <div>
+      <h1>Predictive Analyst Revision Engine</h1>
+      <div class="header-subtitle">Cross-Lingual Assumption Stress-Testing &mdash; EV/Battery Supply Chains</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span><span class="status-dot"></span>DEMO &mdash; CASE: TESLA Q1 2025</span>
+  </div>
+</div>
+
+<!-- PIPELINE NAV -->
+<div class="pipeline-nav">
+  <div class="pipe-step active" onclick="showStep(0)">
+    <span class="step-num">STEP 01</span>
+    Decompose Consensus
+    <span class="pipe-arrow">&rsaquo;</span>
+  </div>
+  <div class="pipe-step" onclick="showStep(1)">
+    <span class="step-num">STEP 02</span>
+    Chinese Ground Truth
+    <span class="pipe-arrow">&rsaquo;</span>
+  </div>
+  <div class="pipe-step" onclick="showStep(2)">
+    <span class="step-num">STEP 03</span>
+    Identify Divergence
+    <span class="pipe-arrow">&rsaquo;</span>
+  </div>
+  <div class="pipe-step" onclick="showStep(3)">
+    <span class="step-num">STEP 04</span>
+    Output &amp; Validation
+  </div>
+</div>
+
+<!-- ==================== STEP 0: DECOMPOSE ==================== -->
+<div class="main" id="step-0">
+  <div class="panel">
+    <div class="panel-label"><span class="tag tag-en">EN</span> SOURCE: EARNINGS CALL TRANSCRIPT</div>
+    <div class="source-block">
+      <div class="source-header">
+        <span>TESLA INC &mdash; Q1 2025 EARNINGS CALL</span>
+        <span>APR 22, 2025</span>
+      </div>
+      <div class="en-text">
+        <p style="margin-bottom:12px"><strong>Vaibhav Taneja, CFO:</strong> &ldquo;On the cost side, we&rsquo;ve seen lithium carbonate prices <span style="color:var(--accent);font-weight:600">stabilize at levels we consider favorable</span> for our long-term contracts. Our cell cost per kilowatt-hour continued to decline sequentially. We remain confident in our ability to <span style="color:var(--accent);font-weight:600">maintain gross margins in the auto segment around current levels</span> through the remainder of the year.&rdquo;</p>
+        <p style="margin-bottom:12px"><strong>Q&amp;A &mdash; Analyst (Morgan Stanley):</strong> &ldquo;Can you give us more color on what you&rsquo;re seeing in terms of battery raw material costs?&rdquo;</p>
+        <p><strong>Taneja:</strong> &ldquo;We are <span style="color:var(--accent);font-weight:600">well-hedged</span> on lithium for the next two quarters. The team has done an excellent job locking in supply agreements. I wouldn&rsquo;t expect any material surprises on the cost side.&rdquo;</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-label">EXTRACTED ASSUMPTIONS</div>
+    <table class="extract-table">
+      <tr>
+        <th>Assumption</th>
+        <th>Embedded Value</th>
+        <th>Source</th>
+      </tr>
+      <tr>
+        <td>Lithium carbonate cost</td>
+        <td class="val-assumption">&ldquo;Stabilized&rdquo; &rarr; Flat QoQ</td>
+        <td>CFO prepared remarks</td>
+      </tr>
+      <tr>
+        <td>Cell cost / kWh</td>
+        <td class="val-assumption">Continued decline</td>
+        <td>CFO prepared remarks</td>
+      </tr>
+      <tr>
+        <td>Auto gross margin</td>
+        <td class="val-assumption">~18.2% &plusmn;0.3pp (maintain &ldquo;around current levels&rdquo;)</td>
+        <td>CFO guidance</td>
+      </tr>
+      <tr>
+        <td>Hedging coverage</td>
+        <td class="val-assumption">Next 2 quarters covered</td>
+        <td>Q&amp;A response</td>
+      </tr>
+      <tr>
+        <td>COGS trajectory</td>
+        <td class="val-assumption">Flat-to-down</td>
+        <td>Implied by above</td>
+      </tr>
+    </table>
+    <div class="source-block" style="border-left: 3px solid var(--accent);">
+      <div class="source-header"><span>BEHAVIORAL NOTE</span></div>
+      <p style="font-size:12px;color:var(--text)">CFO uses <strong style="color:var(--text-bright)">definitive language</strong> in prepared remarks (&ldquo;stabilize,&rdquo; &ldquo;confident&rdquo;) but shifts to <strong style="color:var(--text-bright)">hedging language</strong> in Q&amp;A (&ldquo;wouldn&rsquo;t expect,&rdquo; &ldquo;well-hedged&rdquo;). Prepared-vs-Q&amp;A divergence flags potential over-optimism in scripted guidance.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STEP 1: CHINESE GROUND TRUTH ==================== -->
+<div class="main hidden" id="step-1">
+  <div class="panel">
+    <div class="panel-label"><span class="tag tag-zh">ZH</span> SOURCE: CATL QUARTERLY FILING (MANDARIN)</div>
+    <div class="source-block">
+      <div class="source-header">
+        <span>宁德时代 &mdash; 2025年第一季度报告</span>
+        <span>APR 29, 2025</span>
+      </div>
+      <div class="zh-text">
+        <p style="margin-bottom:12px">报告期内，受上游锂矿价格阶段性反弹影响，公司<span style="color:var(--red);font-weight:600">电池级碳酸锂采购均价环比上涨约12-15%</span>，由上季度的约7.2万元/吨上升至约8.1-8.3万元/吨。公司通过长期协议锁定部分供应量，但<span style="color:var(--red);font-weight:600">现货采购比例有所上升</span>，导致综合采购成本承压。</p>
+        <p>公司动力电池系统毛利率为21.8%，较上季度的22.6%<span style="color:var(--red);font-weight:600">环比下降约0.8个百分点</span>，主要受原材料成本上涨及部分客户定价协议调整影响。</p>
+      </div>
+    </div>
+    <div class="source-block">
+      <div class="source-header">
+        <span>工信部 &mdash; 新能源汽车产业政策通知</span>
+        <span>MAR 15, 2025</span>
+      </div>
+      <div class="zh-text">
+        <p>为促进新能源汽车产业高质量发展，<span style="color:var(--mandarin-tag);font-weight:600">调整碳酸锂等关键矿产出口配额管理办法</span>，对锂精矿出口实施更加严格的审批程序，预计将影响2025年第二季度出口供应量。</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-label">EXTRACTED DATA POINTS</div>
+    <table class="extract-table">
+      <tr>
+        <th>Metric</th>
+        <th>Value</th>
+        <th>Source</th>
+      </tr>
+      <tr>
+        <td>Lithium carbonate cost</td>
+        <td class="val-up">+12-15% QoQ</td>
+        <td>CATL Q1 filing</td>
+      </tr>
+      <tr>
+        <td>Procurement price</td>
+        <td class="val-up">72k &rarr; 81-83k CNY/ton</td>
+        <td>CATL Q1 filing</td>
+      </tr>
+      <tr>
+        <td>Spot purchase ratio</td>
+        <td class="val-up">Increased (hedge coverage declining)</td>
+        <td>CATL Q1 filing</td>
+      </tr>
+      <tr>
+        <td>CATL battery gross margin</td>
+        <td class="val-up">22.6% &rarr; 21.8% (-80bps)</td>
+        <td>CATL Q1 filing</td>
+      </tr>
+      <tr>
+        <td>Export quota</td>
+        <td class="val-up">Tightened (MIIT policy)</td>
+        <td>MIIT announcement</td>
+      </tr>
+    </table>
+    <div class="source-block" style="border-left: 3px solid var(--mandarin-tag);">
+      <div class="source-header"><span>CROSS-LINGUAL NOTE</span></div>
+      <p style="font-size:12px;color:var(--text)">These filings are published exclusively in Mandarin. English-language coverage of CATL&rsquo;s Q1 cost details appeared on Bloomberg terminal <strong style="color:var(--text-bright)">11 days later</strong> (May 10). MIIT policy notice received no major English wire coverage until embedded in a broader Reuters analysis <strong style="color:var(--text-bright)">18 days later</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STEP 2: DIVERGENCE ==================== -->
+<div class="main hidden" id="step-2">
+  <div class="panel">
+    <div class="panel-label"><span class="tag tag-red">ALERT</span> ASSUMPTION DIVERGENCE DETECTED</div>
+
+    <div class="divergence-card">
+      <h3>Breaking Assumption: Lithium Carbonate Cost Trajectory</h3>
+      <div class="divergence-metric">
+        <div class="metric-box">
+          <div class="label">Consensus Assumes</div>
+          <div class="value val-assumption">Flat QoQ</div>
+        </div>
+        <div class="metric-box">
+          <div class="label">CATL Reports</div>
+          <div class="value val-up">+12-15%</div>
+        </div>
+      </div>
+      <p style="font-size:13px;line-height:1.7">Tesla CFO stated lithium costs &ldquo;stabilized&rdquo; on April 22. Seven days later, CATL&rsquo;s Q1 filing (April 29) reports procurement cost up 12-15% QoQ with increasing spot exposure. These cannot both be true for Q2.</p>
+    </div>
+
+    <div class="divergence-card">
+      <h3>Breaking Assumption: Hedging Coverage</h3>
+      <div class="divergence-metric">
+        <div class="metric-box">
+          <div class="label">Tesla Claims</div>
+          <div class="value val-assumption">&ldquo;Well-hedged&rdquo;</div>
+        </div>
+        <div class="metric-box">
+          <div class="label">CATL Reports</div>
+          <div class="value val-up">Spot &uarr;</div>
+        </div>
+      </div>
+      <p style="font-size:13px;line-height:1.7">CATL&rsquo;s filing notes &ldquo;spot purchase ratio increased&rdquo; across its customer base. If Tesla&rsquo;s primary cell supplier is shifting towards spot procurement, Tesla&rsquo;s &ldquo;well-hedged&rdquo; characterization may not hold beyond existing contract terms.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-label">CAUSAL CHAIN</div>
+    <div class="causal-chain">
+      <div class="chain-node" style="border-color:var(--mandarin-tag)">MIIT tightens<br>lithium export quota</div>
+      <div class="chain-arrow">&rarr;</div>
+      <div class="chain-node breaking">Lithium carbonate<br>spot price +12-15%</div>
+      <div class="chain-arrow">&rarr;</div>
+      <div class="chain-node breaking">CATL procurement<br>cost rises to 81-83k/ton</div>
+      <div class="chain-arrow">&rarr;</div>
+      <div class="chain-node breaking">Tesla battery cell<br>input cost &uarr;</div>
+      <div class="chain-arrow">&rarr;</div>
+      <div class="chain-node breaking">Tesla COGS &uarr;</div>
+      <div class="chain-arrow">&rarr;</div>
+      <div class="chain-node breaking">Auto gross margin<br>&darr; ~150-220bps</div>
+    </div>
+
+    <div class="panel-label" style="margin-top:20px">ESTIMATED IMPACT ON CONSENSUS</div>
+    <table class="extract-table">
+      <tr><th>Line Item</th><th>Consensus</th><th>Implied by CATL Data</th><th>Gap</th></tr>
+      <tr>
+        <td>COGS / vehicle</td>
+        <td>$36,200</td>
+        <td>$36,800 - $37,100</td>
+        <td class="val-up">+$600-900</td>
+      </tr>
+      <tr>
+        <td>Auto gross margin</td>
+        <td>18.2%</td>
+        <td>16.0% - 16.7%</td>
+        <td class="val-up">-150 to -220bps</td>
+      </tr>
+      <tr>
+        <td>Q2 EPS impact</td>
+        <td>$0.52</td>
+        <td>$0.45 - $0.48</td>
+        <td class="val-up">-$0.04 to -$0.07</td>
+      </tr>
+    </table>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:8px;font-family:'IBM Plex Mono',monospace;">Note: Pass-through estimated at 60-80% based on historical CATL-cost to Tesla-COGS regression (2022-2024). Not 1:1 due to inventory buffers and contract pricing lags.</p>
+  </div>
+</div>
+
+<!-- ==================== STEP 3: OUTPUT ==================== -->
+<div class="main hidden" id="step-3">
+  <div class="panel">
+    <div class="panel-label"><span class="tag tag-output">OUTPUT</span> REVISION PREDICTION REPORT</div>
+    <div class="report">
+      <div class="report-field">
+        <div class="rkey">Company</div>
+        <div class="rval"><strong>Tesla Inc (TSLA)</strong></div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Breaking Assumption</div>
+        <div class="rval">COGS flat QoQ &mdash; based on CFO &ldquo;stabilized&rdquo; guidance (Apr 22 call)</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Contradicting Source</div>
+        <div class="rval">CATL Q1 2025 filing (Apr 29): lithium carbonate procurement cost +12-15% QoQ</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Causal Mechanism</div>
+        <div class="rval">MIIT export quota tightening &rarr; lithium spot &uarr; &rarr; CATL cost &uarr; &rarr; Tesla cell input &uarr; &rarr; COGS &uarr; &rarr; margin &darr;</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Affected Line Item</div>
+        <div class="rval" style="color:var(--red)">Cost of Goods Sold &rarr; Auto Gross Margin</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Estimated Gap</div>
+        <div class="rval" style="color:var(--red)">Gross margin 150-220bps below consensus; EPS -$0.04 to -$0.07</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Revision Direction</div>
+        <div class="rval" style="color:var(--red);font-weight:700">&darr; DOWNWARD</div>
+      </div>
+      <div class="report-field">
+        <div class="rkey">Confidence</div>
+        <div class="rval"><span style="color:var(--amber)">&#9608;&#9608;&#9608;&#9608;</span><span style="color:var(--border)">&#9608;</span> &nbsp;High &mdash; two independent Chinese sources confirm</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-label">VALIDATION: WHAT ACTUALLY HAPPENED</div>
+    <div class="timeline">
+      <div class="tl-item event-source">
+        <div class="tl-date">MAR 15, 2025</div>
+        <div class="tl-desc"><strong>MIIT</strong> announces tightened lithium export quota management</div>
+      </div>
+      <div class="tl-item event-call">
+        <div class="tl-date">APR 22, 2025</div>
+        <div class="tl-desc"><strong>Tesla Q1 call</strong> &mdash; CFO: costs &ldquo;stabilized,&rdquo; &ldquo;well-hedged&rdquo;</div>
+      </div>
+      <div class="tl-item event-source">
+        <div class="tl-date">APR 29, 2025</div>
+        <div class="tl-desc"><strong>CATL Q1 filing</strong> &mdash; lithium cost +12-15% QoQ (Mandarin only)</div>
+      </div>
+      <div class="tl-item event-alert">
+        <div class="tl-date">APR 29, 2025</div>
+        <div class="tl-desc" style="color:var(--red)"><strong>PARE ALERT</strong> &mdash; divergence detected, report generated</div>
+      </div>
+      <div class="tl-item event-source">
+        <div class="tl-date">MAY 10, 2025</div>
+        <div class="tl-desc">Bloomberg publishes English summary of CATL cost data <span style="color:var(--text-dim)">(+11 days)</span></div>
+      </div>
+      <div class="tl-item event-revision">
+        <div class="tl-date">MAY 14, 2025</div>
+        <div class="tl-desc"><strong>Morgan Stanley</strong> revises Tesla Q2 EPS estimate down $0.05 <span style="color:var(--text-dim)">(+15 days)</span></div>
+      </div>
+      <div class="tl-item event-revision">
+        <div class="tl-date">MAY 19, 2025</div>
+        <div class="tl-desc"><strong>Goldman Sachs</strong> lowers gross margin estimate by 180bps <span style="color:var(--text-dim)">(+20 days)</span></div>
+      </div>
+      <div class="tl-item event-revision">
+        <div class="tl-date">MAY 22, 2025</div>
+        <div class="tl-desc"><strong>Consensus</strong> fully incorporates downward revision <span style="color:var(--text-dim)">(+23 days)</span></div>
+      </div>
+    </div>
+    <div class="source-block" style="border-left: 3px solid var(--green);">
+      <div class="source-header"><span>RESULT</span></div>
+      <p style="font-size:13px;line-height:1.8;color:var(--text)">
+        PARE generated the alert on <strong style="color:var(--text-bright)">April 29</strong> &mdash; the day CATL&rsquo;s filing was published. Sell-side consensus did not fully reflect the same information until <strong style="color:var(--text-bright)">May 22</strong>. The system provided a <strong style="color:var(--green)">23-day lead</strong> over consensus, with the correct direction, affected line item, and magnitude within the realized range.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="credits">
+  PARE &mdash; Predictive Analyst Revision Engine &copy; 2026 Thomas Tse &mdash; Built for Bridgewater AI Innovation Hackathon
+</div>
+
+<script>
+const steps = document.querySelectorAll('.pipe-step');
+const panels = [
+  document.getElementById('step-0'),
+  document.getElementById('step-1'),
+  document.getElementById('step-2'),
+  document.getElementById('step-3')
+];
+
+function showStep(idx) {
+  panels.forEach((p, i) => {
+    p.classList.toggle('hidden', i !== idx);
+  });
+  steps.forEach((s, i) => {
+    s.classList.remove('active');
+    s.classList.toggle('completed', i < idx);
+  });
+  steps[idx].classList.add('active');
+}
+</script>
+</body>
+</html>
