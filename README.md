@@ -2,7 +2,7 @@
 
 **Cross-Lingual Assumption Stress-Testing for EV/Battery Supply Chains**
 
-[**→ Live Demo**](https://thomasyunghint.github.io/pare-demo/)
+[**→ Live Demo**](https://thomasyunghint.github.io/Predictive-Analyst-Revision-Engine/)
 
 ---
 
